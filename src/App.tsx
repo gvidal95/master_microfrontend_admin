@@ -1,21 +1,64 @@
 import './App.css';
+import { useState } from 'react';
 import { mockAuth } from './data/mockAuth';
 import type { AuthContext } from './types/auth';
+import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { CourtShedule } from './components/CourtShedule';
 
 type AppProps = { auth?: AuthContext };
 
-const App = ({ auth = mockAuth }: AppProps) => {
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
   return (
-  <div>
-      <h1>Microfrontend de Administración</h1>
-
-      <p>
-        Este componente pertenece al módulo remoto Administración.
-      </p>
-
-      <p>Usuario actual: {auth.user.name}</p>
-
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`tabpanel-${index}`}
+      aria-labelledby={`tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ p: 2 }}>{children}</Box>}
     </div>
+  );
+}
+
+const App = ({ auth = mockAuth }: AppProps) => {
+  const [activeTab, setActiveTab] = useState(0);
+
+  return (
+    <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Tabs
+        value={activeTab}
+        onChange={(e, newValue) => setActiveTab(newValue)}
+        aria-label="Gestión de administración"
+        sx={{ borderBottom: 1, borderColor: 'divider' }}
+      >
+        <Tab label="Gestión de Canchas" id="tab-0" aria-controls="tabpanel-0" />
+        <Tab label="Gestión de Reservas" id="tab-1" aria-controls="tabpanel-1" />
+      </Tabs>
+
+      <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <TabPanel value={activeTab} index={0}>
+          {/* TODO:  Sección de mantemiento de canchas tabla CRUD */}
+          <p>Tabla de canchas CRUD</p>
+
+          {/* TODO:  Sección de mantenimiento de horarios de una cancha seleccionada de la tabla de CRUD */}
+          <CourtShedule courtId={1}/>
+
+        </TabPanel>
+
+        <TabPanel value={activeTab} index={1}>
+          {/* TODO: Sección 2: Crear mantenimiento de reservas, solo tabla de reservas con botón de cancelación. Considerar un select para mostrar reservas canceladas y activas */}
+        </TabPanel>
+      </Box>
+    </Paper>
   );
 };
 
