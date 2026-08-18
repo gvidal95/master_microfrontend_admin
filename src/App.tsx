@@ -29,14 +29,21 @@ function TabPanel(props: TabPanelProps) {
   );
 }
 
-const App = ({ auth = mockAuth }: AppProps) => {
+const App = ({ auth }: AppProps) => {
   const [activeTab, setActiveTab] = useState(0);
+  const isStandalone = auth === undefined;
+  const currentAuth = auth ?? mockAuth;
 
   return (
-    <Paper sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <Paper data-auth-mode={isStandalone ? 'standalone' : 'shell'} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ px: 2, pt: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          Sesión activa: {currentAuth.user.name} ({currentAuth.user.email})
+        </Typography>
+      </Box>
       <Tabs
         value={activeTab}
-        onChange={(e, newValue) => setActiveTab(newValue)}
+        onChange={(_, newValue) => setActiveTab(newValue)}
         aria-label="Gestión de administración"
         sx={{ borderBottom: 1, borderColor: 'divider' }}
       >
