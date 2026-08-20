@@ -3,9 +3,10 @@ import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import { Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, IconButton, Stack, TextField, Tooltip, Typography } from '@mui/material';
-import { useMemo, useState } from 'react';
-import { scheduleDataExample, type ScheduleData, weekDays } from '../types/schedule';
+import { useEffect, useMemo, useState } from 'react';
+import { type ScheduleData, type ScheduleSaveData, weekDays } from '../types/schedule';
 import type { CourtData } from '../types/court';
+import { courtService } from '../services/courtService';
 
 type CourtSheduleProps = {
     court: CourtData;
@@ -34,15 +35,18 @@ const getHourBlocks = (schedule: ScheduleData) => {
 
 export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => {
 
-    const { courtId } = court;
-
-    const [schedules, setSchedules] = useState<ScheduleData[]>([
-        { ...scheduleDataExample, scheduleCourtId: courtId, scheduleStart: '08:00:00', scheduleEnd: '22:00:00' },
-    ]);
+    const [schedules, setSchedules] = useState<ScheduleData[]>(court.schedules ?? []);
     const [dayToEdit, setDayToEdit] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<TimeRange>({ start: '08:00', end: '22:00' });
     const [error, setError] = useState('');
+    const [isSaving, setIsSaving] = useState(false);
     const schedulesByDay = useMemo(() => new Map(schedules.map((schedule) => [schedule.scheduleDay, schedule])), [schedules]);
+
+    useEffect(() => {
+        setSchedules(court.schedules ?? []);
+        setDayToEdit(null);
+        setError('');
+    }, [court]);
 
     const openEditor = (day: string) => {
         const current = schedulesByDay.get(day);
@@ -50,9 +54,13 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
         setTimeRange({ start: current ? toInputTime(current.scheduleStart) : '08:00', end: current ? toInputTime(current.scheduleEnd) : '22:00' });
         setError('');
     };
-    const closeEditor = () => { setDayToEdit(null); setError(''); };
+    const closeEditor = () => {
+        if (isSaving) return;
+        setDayToEdit(null);
+        setError('');
+    };
 
-    const saveSchedule = () => {
+    const saveSchedule = async () => {
         if (!dayToEdit) return;
 
         if (timeToMinutes(timeRange.end) - timeToMinutes(timeRange.start) < 60) {
@@ -61,21 +69,35 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
         }
         const existing = schedulesByDay.get(dayToEdit);
 
-        const next: ScheduleData = {
-            scheduleId: existing?.scheduleId ?? Math.max(0, ...schedules.map(({ scheduleId }) => scheduleId)) + 1,
+        const schedule: ScheduleSaveData = {
             scheduleDay: dayToEdit,
-            scheduleCourtId: courtId,
+            scheduleCourtId: court.courtId,
             scheduleStart: toStoredTime(timeRange.start),
             scheduleEnd: toStoredTime(timeRange.end),
         };
 
-        console.log({next});
+        setIsSaving(true);
+        setError('');
 
-        const nextSchedules = existing ? schedules.map((schedule) => schedule.scheduleDay === dayToEdit ? next : schedule) : [...schedules, next];
+        try {
+            const savedSchedule = existing
+                ? await courtService.updateSchedule(existing.scheduleId, schedule)
+                : await courtService.saveSchedule(schedule);
 
-        setSchedules(nextSchedules);
-        onScheduleChange?.(nextSchedules);
-        closeEditor();
+            const nextSchedules = existing
+                ? schedules.map((current) => current.scheduleId === existing.scheduleId ? savedSchedule : current)
+                : [...schedules, savedSchedule];
+
+            setSchedules(nextSchedules);
+            onScheduleChange?.(nextSchedules);
+            setDayToEdit(null);
+        } catch {
+            setError(existing
+                ? 'No se pudo actualizar el horario. Inténtalo nuevamente.'
+                : 'No se pudo crear el horario. Inténtalo nuevamente.');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const editingSchedule = dayToEdit ? schedulesByDay.get(dayToEdit) : undefined;
@@ -144,8 +166,8 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
                     {error && <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
-                    <Button onClick={closeEditor} color="inherit">Cancelar</Button>
-                    <Button onClick={saveSchedule} variant="contained">Guardar horario</Button>
+                    <Button onClick={closeEditor} color="inherit" disabled={isSaving}>Cancelar</Button>
+                    <Button onClick={saveSchedule} variant="contained" loading={isSaving}>Guardar horario</Button>
                 </DialogActions>
             </Dialog>
         </Box>

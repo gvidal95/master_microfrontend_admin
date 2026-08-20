@@ -37,7 +37,7 @@ const App = ({ auth }: AppProps) => {
   const currentAuth = auth ?? mockAuth;
 
   // TODO: Seleccionar desde la tabla crud la cancha al presionar el botón de gestionar horarios.
-  // const [courtSelected, setCourtSelected] = useState<CourtData | null>(courtDataExample); // TODO: Cambiar a null, los datos lleguen del backend
+  // const [courtSelected, setCourtSelected] = useState<CourtData | null>(courtDataExample); // Ejemplo de cancha
   const [courtSelected, setCourtSelected] = useState<CourtData | null>(null); // TODO: Cambiar a null, los datos lleguen del backend
 
   return (
@@ -72,6 +72,7 @@ const App = ({ auth }: AppProps) => {
 
         <TabPanel value={activeTab} index={1}>
           {/* TODO: Sección 2: Crear mantenimiento de reservas, solo tabla de reservas con botón de cancelación. Considerar un select para mostrar reservas canceladas y activas */}
+            <p>Tabla de Reservas con opción de cancelar reservas</p>
         </TabPanel>
       </Box>
     </Paper>

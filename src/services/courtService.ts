@@ -3,7 +3,7 @@ import type { CourtData } from '../types/court';
 import type { ScheduleData, ScheduleSaveData } from '../types/schedule';
 
 const courtApi = axios.create({
-  baseURL: 'http://localhost:8081/api',
+  baseURL: 'http://localhost:8081/courts/api',
 });
 
 /** Servicio HTTP para las operaciones relacionadas con canchas y sus horarios. */
@@ -17,6 +17,12 @@ export const courtService = {
   /** Crea un horario para una cancha. */
   saveSchedule: async (schedule: ScheduleSaveData): Promise<ScheduleData> => {
     const { data } = await courtApi.post<ScheduleData>('/schedules', schedule);
+    return data;
+  },
+
+  /** Actualiza un horario existente. */
+  updateSchedule: async (scheduleId: number, schedule: ScheduleSaveData): Promise<ScheduleData> => {
+    const { data } = await courtApi.put<ScheduleData>(`/schedules/${scheduleId}`, schedule);
     return data;
   },
 };
