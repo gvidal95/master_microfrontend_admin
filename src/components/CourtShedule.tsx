@@ -16,6 +16,22 @@ type CourtSheduleProps = {
 
 type TimeRange = { start: string; end: string };
 
+const apiDayByDisplayDay: Record<string, string> = {
+    Lunes: 'MONDAY',
+    Martes: 'TUESDAY',
+    Miércoles: 'WEDNESDAY',
+    Jueves: 'THURSDAY',
+    Viernes: 'FRIDAY',
+    Sábado: 'SATURDAY',
+    Domingo: 'SUNDAY',
+};
+
+const displayDayByApiDay = Object.fromEntries(
+    Object.entries(apiDayByDisplayDay).map(([displayDay, apiDay]) => [apiDay, displayDay]),
+);
+
+const toDisplayDay = (day: string) => displayDayByApiDay[day.toUpperCase()] ?? day;
+
 const toInputTime = (time: string) => time.slice(0, 5);
 const toStoredTime = (time: string) => `${time}:00`;
 const timeToMinutes = (time: string) => {
@@ -40,7 +56,10 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
     const [timeRange, setTimeRange] = useState<TimeRange>({ start: '08:00', end: '22:00' });
     const [error, setError] = useState('');
     const [isSaving, setIsSaving] = useState(false);
-    const schedulesByDay = useMemo(() => new Map(schedules.map((schedule) => [schedule.scheduleDay, schedule])), [schedules]);
+    const schedulesByDay = useMemo(
+        () => new Map(schedules.map((schedule) => [toDisplayDay(schedule.scheduleDay), schedule])),
+        [schedules],
+    );
 
     useEffect(() => {
         setSchedules(court.schedules ?? []);
@@ -70,7 +89,7 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
         const existing = schedulesByDay.get(dayToEdit);
 
         const schedule: ScheduleSaveData = {
-            scheduleDay: dayToEdit,
+            scheduleDay: apiDayByDisplayDay[dayToEdit],
             scheduleCourtId: court.courtId,
             scheduleStart: toStoredTime(timeRange.start),
             scheduleEnd: toStoredTime(timeRange.end),
