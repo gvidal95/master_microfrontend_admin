@@ -35,7 +35,7 @@ const getHourBlocks = (schedule: ScheduleData) => {
 
 export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => {
 
-    const [schedules, setSchedules] = useState<ScheduleData[]>(court.schedules ?? []);
+    const [schedules, setSchedules] = useState<ScheduleData[]>(court.courtSchedules ?? []);
     const [dayToEdit, setDayToEdit] = useState<string | null>(null);
     const [timeRange, setTimeRange] = useState<TimeRange>({ start: '08:00', end: '22:00' });
     const [error, setError] = useState('');
@@ -43,7 +43,7 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
     const schedulesByDay = useMemo(() => new Map(schedules.map((schedule) => [schedule.scheduleDay, schedule])), [schedules]);
 
     useEffect(() => {
-        setSchedules(court.schedules ?? []);
+        setSchedules(court.courtSchedules ?? []);
         setDayToEdit(null);
         setError('');
     }, [court]);

@@ -3,9 +3,9 @@ import { useState } from 'react';
 import { mockAuth } from './data/mockAuth';
 import type { AuthContext } from './types/auth';
 import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
+import { CourtManagement } from './components/CourtManagement';
 import { CourtShedule } from './components/CourtShedule';
 import type { CourtData } from './types/court';
-import { courtDataExample } from './data/court';
 
 type AppProps = { auth?: AuthContext };
 
@@ -36,9 +36,7 @@ const App = ({ auth }: AppProps) => {
   const isStandalone = auth === undefined;
   const currentAuth = auth ?? mockAuth;
 
-  // TODO: Seleccionar desde la tabla crud la cancha al presionar el botón de gestionar horarios.
-  // const [courtSelected, setCourtSelected] = useState<CourtData | null>(courtDataExample); // Ejemplo de cancha
-  const [courtSelected, setCourtSelected] = useState<CourtData | null>(null); // TODO: Cambiar a null, los datos lleguen del backend
+  const [courtSelected, setCourtSelected] = useState<CourtData | null>(null);
 
   return (
     <Paper data-auth-mode={isStandalone ? 'standalone' : 'shell'} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -59,13 +57,20 @@ const App = ({ auth }: AppProps) => {
 
       <Box sx={{ flex: 1, overflow: 'auto' }}>
         <TabPanel value={activeTab} index={0}>
-          {/* TODO:  Sección de mantemiento de canchas tabla CRUD */}
-          <p>Tabla de canchas CRUD</p>
+          <CourtManagement
+            selectedCourtId={courtSelected?.courtId ?? null}
+            onManageSchedule={(court) => setCourtSelected(court)}
+            syncedCourt={courtSelected}
+          />
 
-          {/* TODO:  Sección de mantenimiento de horarios de una cancha seleccionada de la tabla de CRUD */}
           {
             courtSelected &&
-            <CourtShedule court={courtSelected} />
+            <CourtShedule
+              court={courtSelected}
+              onScheduleChange={(schedules) => setCourtSelected((current) => (
+                current ? { ...current, courtSchedules: schedules } : current
+              ))}
+            />
           }
 
         </TabPanel>
