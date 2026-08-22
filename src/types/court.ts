@@ -8,6 +8,14 @@ export type CourtData = {
   courtCapacity: number;
   courtSportId: number;
   courtPrice: number;
-  sport: SportData;
-  schedules: ScheduleData []
+  courtSport: SportData;
+  courtSchedules: ScheduleData[];
+};
+
+export type CourtSaveData = {
+  courtName: string;
+  courtDescription: string;
+  courtCapacity: number;
+  courtSportId: number;
+  courtPrice: number;
 };

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { CourtData } from '../types/court';
+import type { CourtData, CourtSaveData } from '../types/court';
 import type { ScheduleData, ScheduleSaveData } from '../types/schedule';
 
 const courtApi = axios.create({
@@ -12,6 +12,23 @@ export const courtService = {
   getCourts: async (): Promise<CourtData[]> => {
     const { data } = await courtApi.get<CourtData[]>('/courts');
     return data;
+  },
+
+  /** Crea una cancha. */
+  createCourt: async (court: CourtSaveData): Promise<CourtData> => {
+    const { data } = await courtApi.post<CourtData>('/courts', court);
+    return data;
+  },
+
+  /** Actualiza una cancha existente. */
+  updateCourt: async (courtId: number, court: CourtSaveData): Promise<CourtData> => {
+    const { data } = await courtApi.put<CourtData>(`/courts/${courtId}`, court);
+    return data;
+  },
+
+  /** Elimina una cancha. */
+  deleteCourt: async (courtId: number): Promise<void> => {
+    await courtApi.delete(`/courts/${courtId}`);
   },
 
   /** Crea un horario para una cancha. */

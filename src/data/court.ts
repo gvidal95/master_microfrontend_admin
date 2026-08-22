@@ -7,11 +7,11 @@ export const courtDataExample: CourtData = {
   courtCapacity: 10,
   courtSportId: 1,
   courtPrice: 25,
-  sport: {
+  courtSport: {
     sportId: 1,
     sportName: 'Fútbol',
   },
-  schedules: [
+  courtSchedules: [
     {
       scheduleId: 1,
       scheduleDay: 'Lunes',
