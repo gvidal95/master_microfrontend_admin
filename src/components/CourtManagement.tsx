@@ -27,9 +27,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useEffect, useState } from 'react';
-import { courtService } from '../services/courtService';
-import { sportService } from '../services/sportService';
+import { useCallback, useEffect, useState } from 'react';
+import { useServices } from '../services/ServicesContext';
 import type { CourtData, CourtSaveData } from '../types/court';
 import type { SportData } from '../types/sport';
 
@@ -67,6 +66,7 @@ const toFormState = (court: CourtData): CourtFormState => ({
 const currencyFormatter = new Intl.NumberFormat('es-EC', { style: 'currency', currency: 'USD' });
 
 export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt }: CourtManagementProps) => {
+  const { courtService, sportService } = useServices();
   const [courts, setCourts] = useState<CourtData[]>([]);
   const [sports, setSports] = useState<SportData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,7 +87,7 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
   const [sportError, setSportError] = useState('');
   const [isSavingSport, setIsSavingSport] = useState(false);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     setLoadError('');
     try {
@@ -99,11 +99,11 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [courtService, sportService]);
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [loadData]);
 
   useEffect(() => {
     if (!syncedCourt) return;

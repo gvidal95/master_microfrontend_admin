@@ -6,7 +6,7 @@ import { Alert, Box, Button, Card, CardContent, Chip, Dialog, DialogActions, Dia
 import { useEffect, useMemo, useState } from 'react';
 import { type ScheduleData, type ScheduleSaveData, weekDays } from '../types/schedule';
 import type { CourtData } from '../types/court';
-import { courtService } from '../services/courtService';
+import { useServices } from '../services/ServicesContext';
 
 type CourtSheduleProps = {
     court: CourtData;
@@ -50,6 +50,7 @@ const getHourBlocks = (schedule: ScheduleData) => {
 };
 
 export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => {
+    const { courtService } = useServices();
 
     const [schedules, setSchedules] = useState<ScheduleData[]>(court.courtSchedules ?? []);
     const [dayToEdit, setDayToEdit] = useState<string | null>(null);

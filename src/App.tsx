@@ -6,6 +6,7 @@ import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { CourtManagement } from './components/CourtManagement';
 import { CourtShedule } from './components/CourtShedule';
 import type { CourtData } from './types/court';
+import { ServicesProvider } from './services/ServicesContext';
 
 type AppProps = { auth?: AuthContext };
 
@@ -39,7 +40,8 @@ const App = ({ auth }: AppProps) => {
   const [courtSelected, setCourtSelected] = useState<CourtData | null>(null);
 
   return (
-    <Paper data-auth-mode={isStandalone ? 'standalone' : 'shell'} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <ServicesProvider token={currentAuth.token}>
+      <Paper data-auth-mode={isStandalone ? 'standalone' : 'shell'} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Box sx={{ px: 2, pt: 2 }}>
         <Typography variant="body2" color="text.secondary">
           Sesión activa: {currentAuth.user.name} ({currentAuth.user.email})
@@ -80,7 +82,8 @@ const App = ({ auth }: AppProps) => {
             <p>Tabla de Reservas con opción de cancelar reservas</p>
         </TabPanel>
       </Box>
-    </Paper>
+      </Paper>
+    </ServicesProvider>
   );
 };
 
