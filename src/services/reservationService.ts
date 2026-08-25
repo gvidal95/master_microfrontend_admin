@@ -4,7 +4,7 @@ import { createApiClient } from './apiClient';
 
 /** Servicio de reservas con almacenamiento mock y una interfaz compatible con HTTP. */
 export const createReservationService = (token: string) => {
-  const reservationApi = createApiClient('http://localhost:8083/reservations/api/', token);
+  const reservationApi = createApiClient('http://localhost:8080/reservations/api/', token);
 
   return {
     /** Obtiene las reservas activas que bloquean horarios en una fecha. */
