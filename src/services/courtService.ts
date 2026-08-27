@@ -5,7 +5,7 @@ import { createApiClient } from './apiClient';
 
 /** Servicio HTTP para las operaciones relacionadas con canchas y sus horarios. */
 export const createCourtService = (token: string) => {
-  const courtApi = createApiClient('http://localhost:8081/courts/api', token);
+  const courtApi = createApiClient('http://localhost:8080/courts/api', token);
 
   return {
     /** Obtiene las canchas junto con sus datos de deporte y horarios. */

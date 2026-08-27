@@ -3,7 +3,7 @@ import { createApiClient } from './apiClient';
 
 /** Servicio HTTP para las operaciones relacionadas con deportes. */
 export const createSportService = (token: string) => {
-  const sportApi = createApiClient('http://localhost:8081/courts/api', token);
+  const sportApi = createApiClient('http://localhost:8080/courts/api', token);
 
   return {
     /** Obtiene el catálogo de deportes. */
