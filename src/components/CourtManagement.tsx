@@ -1,8 +1,11 @@
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import BuildRoundedIcon from '@mui/icons-material/BuildRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ScheduleRoundedIcon from '@mui/icons-material/ScheduleRounded';
 import SportsRoundedIcon from '@mui/icons-material/SportsRounded';
+import ToggleOffRoundedIcon from '@mui/icons-material/ToggleOffRounded';
+import ToggleOnRoundedIcon from '@mui/icons-material/ToggleOnRounded';
 import {
   Alert,
   Box,
@@ -30,7 +33,9 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useServices } from '../services/ServicesContext';
 import type { CourtData, CourtSaveData } from '../types/court';
+import type { MaintenanceBlockData, MaintenanceBlockSaveData } from '../types/maintenanceBlock';
 import type { SportData } from '../types/sport';
+import { formatDate } from '../utils/DateTime';
 
 type CourtManagementProps = {
   selectedCourtId: number | null;
@@ -86,6 +91,17 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
   const [newSportName, setNewSportName] = useState('');
   const [sportError, setSportError] = useState('');
   const [isSavingSport, setIsSavingSport] = useState(false);
+
+  const [togglingCourtId, setTogglingCourtId] = useState<number | null>(null);
+  const [toggleError, setToggleError] = useState('');
+
+  const [courtForMaintenance, setCourtForMaintenance] = useState<CourtData | null>(null);
+  const [maintenanceForm, setMaintenanceForm] = useState({ startDate: '', endDate: '', reason: '' });
+  const [maintenanceFormError, setMaintenanceFormError] = useState('');
+  const [isSavingMaintenance, setIsSavingMaintenance] = useState(false);
+  const [blockToDelete, setBlockToDelete] = useState<MaintenanceBlockData | null>(null);
+  const [isDeletingBlock, setIsDeletingBlock] = useState(false);
+  const [deleteBlockError, setDeleteBlockError] = useState('');
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -216,6 +232,95 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
     }
   };
 
+  const toggleActive = async (court: CourtData) => {
+    setTogglingCourtId(court.courtId);
+    setToggleError('');
+    try {
+      const updatedCourt = await courtService.updateCourtActive(court.courtId, !court.courtActive);
+      setCourts((current) => current.map((item) => (item.courtId === updatedCourt.courtId ? updatedCourt : item)));
+    } catch {
+      setToggleError('No se pudo actualizar el estado de la cancha. Inténtalo nuevamente.');
+    } finally {
+      setTogglingCourtId(null);
+    }
+  };
+
+  const updateCourtMaintenanceBlocks = (
+    courtId: number,
+    updater: (blocks: MaintenanceBlockData[]) => MaintenanceBlockData[],
+  ) => {
+    setCourts((current) => current.map((court) => (
+      court.courtId === courtId
+        ? { ...court, courtMaintenanceBlocks: updater(court.courtMaintenanceBlocks ?? []) }
+        : court
+    )));
+    setCourtForMaintenance((current) => (
+      current && current.courtId === courtId
+        ? { ...current, courtMaintenanceBlocks: updater(current.courtMaintenanceBlocks ?? []) }
+        : current
+    ));
+  };
+
+  const openMaintenanceDialog = (court: CourtData) => {
+    setCourtForMaintenance(court);
+    setMaintenanceForm({ startDate: '', endDate: '', reason: '' });
+    setMaintenanceFormError('');
+  };
+
+  const closeMaintenanceDialog = () => {
+    if (isSavingMaintenance) return;
+    setCourtForMaintenance(null);
+  };
+
+  const submitMaintenanceBlock = async () => {
+    if (!courtForMaintenance) return;
+
+    if (!maintenanceForm.startDate || !maintenanceForm.endDate) {
+      setMaintenanceFormError('Selecciona la fecha de inicio y de fin del bloqueo.');
+      return;
+    }
+    if (maintenanceForm.endDate < maintenanceForm.startDate) {
+      setMaintenanceFormError('La fecha de fin debe ser igual o posterior a la fecha de inicio.');
+      return;
+    }
+
+    const payload: MaintenanceBlockSaveData = {
+      maintenanceBlockCourtId: courtForMaintenance.courtId,
+      maintenanceBlockStartDate: maintenanceForm.startDate,
+      maintenanceBlockEndDate: maintenanceForm.endDate,
+      maintenanceBlockReason: maintenanceForm.reason.trim(),
+    };
+
+    setIsSavingMaintenance(true);
+    setMaintenanceFormError('');
+    try {
+      const savedBlock = await courtService.createMaintenanceBlock(payload);
+      updateCourtMaintenanceBlocks(courtForMaintenance.courtId, (blocks) => [...blocks, savedBlock]);
+      setMaintenanceForm({ startDate: '', endDate: '', reason: '' });
+    } catch {
+      setMaintenanceFormError('No se pudo crear el bloqueo de mantenimiento. Inténtalo nuevamente.');
+    } finally {
+      setIsSavingMaintenance(false);
+    }
+  };
+
+  const confirmDeleteBlock = async () => {
+    if (!blockToDelete || !courtForMaintenance) return;
+    setIsDeletingBlock(true);
+    setDeleteBlockError('');
+    try {
+      await courtService.deleteMaintenanceBlock(blockToDelete.maintenanceBlockId);
+      updateCourtMaintenanceBlocks(courtForMaintenance.courtId, (blocks) => (
+        blocks.filter((block) => block.maintenanceBlockId !== blockToDelete.maintenanceBlockId)
+      ));
+      setBlockToDelete(null);
+    } catch {
+      setDeleteBlockError('No se pudo eliminar el bloqueo. Inténtalo nuevamente.');
+    } finally {
+      setIsDeletingBlock(false);
+    }
+  };
+
   return (
     <Box sx={{ maxWidth: 1180, mx: 'auto', py: 2 }}>
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 3, justifyContent: 'space-between', alignItems: { sm: 'center' } }}>
@@ -234,6 +339,7 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
       </Stack>
 
       {loadError && <Alert severity="error" sx={{ mb: 2 }}>{loadError}</Alert>}
+      {toggleError && <Alert severity="error" sx={{ mb: 2 }}>{toggleError}</Alert>}
 
       {isLoading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
@@ -257,6 +363,7 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
                 <TableCell align="center">Capacidad</TableCell>
                 <TableCell align="right">Precio</TableCell>
                 <TableCell>Descripción</TableCell>
+                <TableCell align="center">Estado</TableCell>
                 <TableCell align="right">Acciones</TableCell>
               </TableRow>
             </TableHead>
@@ -268,11 +375,36 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
                   <TableCell align="center">{court.courtCapacity}</TableCell>
                   <TableCell align="right">{currencyFormatter.format(court.courtPrice)}</TableCell>
                   <TableCell sx={{ maxWidth: 260, color: 'text.secondary' }}>{court.courtDescription || '—'}</TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={court.courtActive ? 'Activa' : 'Inactiva'}
+                      color={court.courtActive ? 'success' : 'default'}
+                      size="small"
+                    />
+                  </TableCell>
                   <TableCell align="right">
                     <Tooltip title="Gestionar horarios">
                       <IconButton color={court.courtId === selectedCourtId ? 'primary' : 'default'} onClick={() => onManageSchedule(court)}>
                         <ScheduleRoundedIcon fontSize="small" />
                       </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Bloqueos de mantenimiento">
+                      <IconButton color={court.courtId === courtForMaintenance?.courtId ? 'primary' : 'default'} onClick={() => openMaintenanceDialog(court)}>
+                        <BuildRoundedIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title={court.courtActive ? 'Inactivar cancha' : 'Activar cancha'}>
+                      <span>
+                        <IconButton
+                          color={court.courtActive ? 'success' : 'default'}
+                          disabled={togglingCourtId !== null}
+                          onClick={() => toggleActive(court)}
+                        >
+                          {togglingCourtId === court.courtId
+                            ? <CircularProgress size={20} color="inherit" />
+                            : court.courtActive ? <ToggleOnRoundedIcon fontSize="small" /> : <ToggleOffRoundedIcon fontSize="small" />}
+                        </IconButton>
+                      </span>
                     </Tooltip>
                     <Tooltip title="Editar cancha">
                       <IconButton onClick={() => openEditForm(court)}>
@@ -375,6 +507,91 @@ export const CourtManagement = ({ selectedCourtId, onManageSchedule, syncedCourt
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={() => setIsSportDialogOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de bloqueos de mantenimiento */}
+      <Dialog open={Boolean(courtForMaintenance)} onClose={closeMaintenanceDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Bloqueos de mantenimiento · {courtForMaintenance?.courtName}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Mientras una cancha tenga un bloqueo vigente para una fecha, no aparecerá como disponible para reservar ese día.
+          </Typography>
+
+          <Stack spacing={1} sx={{ mb: 2.5 }}>
+            {(courtForMaintenance?.courtMaintenanceBlocks ?? []).length === 0 ? (
+              <Typography variant="body2" color="text.secondary">Sin bloqueos registrados.</Typography>
+            ) : (
+              (courtForMaintenance?.courtMaintenanceBlocks ?? [])
+                .slice()
+                .sort((a, b) => a.maintenanceBlockStartDate.localeCompare(b.maintenanceBlockStartDate))
+                .map((block) => (
+                  <Paper key={block.maintenanceBlockId} variant="outlined" sx={{ p: 1.5, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {formatDate(block.maintenanceBlockStartDate)} — {formatDate(block.maintenanceBlockEndDate)}
+                      </Typography>
+                      {block.maintenanceBlockReason && (
+                        <Typography variant="caption" color="text.secondary">{block.maintenanceBlockReason}</Typography>
+                      )}
+                    </Box>
+                    <Tooltip title="Eliminar bloqueo">
+                      <span>
+                        <IconButton
+                          color="error"
+                          size="small"
+                          disabled={isDeletingBlock}
+                          onClick={() => { setBlockToDelete(block); setDeleteBlockError(''); }}
+                        >
+                          <DeleteOutlineRoundedIcon fontSize="small" />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Paper>
+                ))
+            )}
+          </Stack>
+
+          <Typography variant="subtitle2" sx={{ mb: 1.5 }}>Nuevo bloqueo</Typography>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+            <TextField
+              label="Fecha de inicio" type="date" value={maintenanceForm.startDate}
+              onChange={(event) => setMaintenanceForm((current) => ({ ...current, startDate: event.target.value }))}
+              slotProps={{ inputLabel: { shrink: true } }} fullWidth required
+            />
+            <TextField
+              label="Fecha de fin" type="date" value={maintenanceForm.endDate}
+              onChange={(event) => setMaintenanceForm((current) => ({ ...current, endDate: event.target.value }))}
+              slotProps={{ inputLabel: { shrink: true } }} fullWidth required
+            />
+          </Stack>
+          <TextField
+            label="Motivo" value={maintenanceForm.reason} sx={{ mt: 2 }}
+            onChange={(event) => setMaintenanceForm((current) => ({ ...current, reason: event.target.value }))}
+            fullWidth multiline minRows={2} placeholder="Ej. Cambio de red, resurfacing…"
+          />
+          {maintenanceFormError && <Alert severity="error" sx={{ mt: 2 }}>{maintenanceFormError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeMaintenanceDialog} color="inherit" disabled={isSavingMaintenance}>Cerrar</Button>
+          <Button onClick={submitMaintenanceBlock} variant="contained" loading={isSavingMaintenance}>Agregar bloqueo</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Modal de confirmación de eliminación de bloqueo */}
+      <Dialog open={Boolean(blockToDelete)} onClose={() => !isDeletingBlock && setBlockToDelete(null)} fullWidth maxWidth="xs">
+        <DialogTitle>Eliminar bloqueo</DialogTitle>
+        <DialogContent>
+          <Typography>
+            ¿Seguro que deseas eliminar el bloqueo del{' '}
+            <strong>{blockToDelete && formatDate(blockToDelete.maintenanceBlockStartDate)}</strong> al{' '}
+            <strong>{blockToDelete && formatDate(blockToDelete.maintenanceBlockEndDate)}</strong>?
+          </Typography>
+          {deleteBlockError && <Alert severity="error" sx={{ mt: 2 }}>{deleteBlockError}</Alert>}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setBlockToDelete(null)} color="inherit" disabled={isDeletingBlock}>Cancelar</Button>
+          <Button onClick={confirmDeleteBlock} color="error" variant="contained" loading={isDeletingBlock}>Eliminar</Button>
         </DialogActions>
       </Dialog>
     </Box>

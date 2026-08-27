@@ -1,4 +1,5 @@
 import type { CourtData, CourtSaveData } from '../types/court';
+import type { MaintenanceBlockData, MaintenanceBlockSaveData } from '../types/maintenanceBlock';
 import type { ScheduleData, ScheduleSaveData } from '../types/schedule';
 import { createApiClient } from './apiClient';
 
@@ -28,6 +29,23 @@ export const createCourtService = (token: string) => {
     /** Elimina una cancha. */
     deleteCourt: async (courtId: number): Promise<void> => {
       await courtApi.delete(`/courts/${courtId}`);
+    },
+
+    /** Activa o inactiva una cancha. */
+    updateCourtActive: async (courtId: number, active: boolean): Promise<CourtData> => {
+      const { data } = await courtApi.patch<CourtData>(`/courts/${courtId}/active`, { courtActive: active });
+      return data;
+    },
+
+    /** Crea un bloqueo de mantenimiento para una cancha. */
+    createMaintenanceBlock: async (block: MaintenanceBlockSaveData): Promise<MaintenanceBlockData> => {
+      const { data } = await courtApi.post<MaintenanceBlockData>('/maintenance-blocks', block);
+      return data;
+    },
+
+    /** Elimina un bloqueo de mantenimiento. */
+    deleteMaintenanceBlock: async (maintenanceBlockId: number): Promise<void> => {
+      await courtApi.delete(`/maintenance-blocks/${maintenanceBlockId}`);
     },
 
     /** Crea un horario para una cancha. */

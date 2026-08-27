@@ -1,3 +1,4 @@
+import type { MaintenanceBlockData } from "./maintenanceBlock";
 import type { ScheduleData } from "./schedule";
 import type { SportData } from "./sport";
 
@@ -8,8 +9,10 @@ export type CourtData = {
   courtCapacity: number;
   courtSportId: number;
   courtPrice: number;
+  courtActive: boolean;
   courtSport: SportData;
   courtSchedules: ScheduleData[];
+  courtMaintenanceBlocks: MaintenanceBlockData[];
 };
 
 export type CourtSaveData = {

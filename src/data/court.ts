@@ -7,10 +7,12 @@ export const courtDataExample: CourtData = {
   courtCapacity: 10,
   courtSportId: 1,
   courtPrice: 25,
+  courtActive: true,
   courtSport: {
     sportId: 1,
     sportName: 'Fútbol',
   },
+  courtMaintenanceBlocks: [],
   courtSchedules: [
     {
       scheduleId: 1,
