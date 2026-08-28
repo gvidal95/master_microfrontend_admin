@@ -1,3 +1,4 @@
+import axios from 'axios';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
@@ -81,13 +82,19 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
     };
 
     const saveSchedule = async () => {
+        // Guard síncrono: sin esto, un doble clic en "Guardar horario" puede disparar dos
+        // POST antes de que el estado `isSaving` re-renderice el botón como deshabilitado,
+        // creando dos horarios para el mismo día.
+        if (isSaving) return;
         if (!dayToEdit) return;
 
         if (timeToMinutes(timeRange.end) - timeToMinutes(timeRange.start) < 60) {
             setError('La hora de fin debe ser al menos 60 minutos posterior a la hora de inicio.');
             return;
         }
-        const existing = schedulesByDay.get(dayToEdit);
+
+        const apiDay = apiDayByDisplayDay[dayToEdit];
+        const existing = schedules.find((current) => current.scheduleDay === apiDay);
 
         const schedule: ScheduleSaveData = {
             scheduleDay: apiDayByDisplayDay[dayToEdit],
@@ -111,10 +118,13 @@ export const CourtShedule = ({ court, onScheduleChange }: CourtSheduleProps) => 
             setSchedules(nextSchedules);
             onScheduleChange?.(nextSchedules);
             setDayToEdit(null);
-        } catch {
-            setError(existing
-                ? 'No se pudo actualizar el horario. Inténtalo nuevamente.'
-                : 'No se pudo crear el horario. Inténtalo nuevamente.');
+        } catch (err) {
+            const isConflict = axios.isAxiosError(err) && err.response?.status === 409;
+            setError(isConflict
+                ? 'Ya existe un horario para este día. Solo se permite un horario por día; edítalo en vez de crear uno nuevo.'
+                : existing
+                    ? 'No se pudo actualizar el horario. Inténtalo nuevamente.'
+                    : 'No se pudo crear el horario. Inténtalo nuevamente.');
         } finally {
             setIsSaving(false);
         }
